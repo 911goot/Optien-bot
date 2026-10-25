@@ -1,0 +1,43 @@
+app.py
+from flask import Flask, request, jsonify
+import requests
+
+app = Flask(__name__)
+
+TELEGRAM_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
+CHAT_ID = "YOUR_CHAT_ID"
+
+def send_to_telegram(message):
+url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+payload = {"chat_id": CHAT_ID, "text": message, "parse_mode": "Markdown"}
+requests.post(url, json=payload)
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+data = request.json
+if not data:
+return jsonify({"status": "error", "message": "No data received"}), 400
+
+ticker = data.get('ticker', 'UNKNOWN')
+price = data.get('price', 0)
+rsi = data.get('rsi', 0)
+momentum_status = data.get('momentum', 'Confirmed Volume & RSI Bounce')
+support_level = data.get('support', 0)
+option_details = data.get('option', 'Call Option Setup')
+
+message = (
+f"🎯 **تنبيه فرص الأوبشن المؤسسية (ارتداد وزخم)** 🎯\n\n"
+f"📌 **السهم:** `{ticker}`\n"
+f"💵 **سعر الدخول:** `${price}`\n"
+f"🛡️ **منطقة القاع / الدعم القوي:** `${support_level}`\n"
+f"⚡ **حالة الزخم:** `{momentum_status}`\n"
+f"📊 **مؤشر القوة النسبية RSI:** `{rsi}`\n"
+f"📈 **العقد المقترح:** `{option_details}`\n\n"
+f"💡 *شروط الاكتمال: ارتداد مؤكد من قاع أسبوعي/تاريخي + سيولة وحجم تداول استثنائي.*"
+)
+
+send_to_telegram(message)
+return jsonify({"status": "success"}), 200
+
+if __name__ == '__main__':
+app.run(host='0.0.0.0', port=5000)
